@@ -1,12 +1,9 @@
-"""Pure analytics — no UI, no randomness. All formulas are deterministic."""
+"""Pure analytics — no UI, no randomness."""
 from __future__ import annotations
 import pandas as pd
 import numpy as np
 
 
-# ---------------------------------------------------------------------------
-# Executive KPIs
-# ---------------------------------------------------------------------------
 def executive_kpis(projects: pd.DataFrame,
                    bids: pd.DataFrame,
                    cos: pd.DataFrame,
@@ -44,15 +41,11 @@ def profitability_frame(projects: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ---------------------------------------------------------------------------
-# Risk scan
-# ---------------------------------------------------------------------------
 def scan_risks(projects: pd.DataFrame,
                cos: pd.DataFrame,
                txns: pd.DataFrame) -> list[dict]:
     risks = []
 
-    # Margin erosion
     eroded = projects[projects["margin_erosion"] >= 3.0].sort_values("margin_erosion", ascending=False)
     for _, r in eroded.iterrows():
         impact = -(r["margin_erosion"] / 100) * r["contract_value"]
@@ -67,7 +60,6 @@ def scan_risks(projects: pd.DataFrame,
             "cause": "Material, equipment, and labor cost pressure",
         })
 
-    # Overdue receivables
     overdue = txns[(txns["type"] == "Receivable") & (txns["status"] == "Overdue")]
     for _, r in overdue.iterrows():
         risks.append({
@@ -80,7 +72,6 @@ def scan_risks(projects: pd.DataFrame,
             "cause": "Owner payment delay",
         })
 
-    # Pending change orders aging
     aged = cos[(cos["days_pending"] >= 10) & (cos["status"].isin(
         ["Pending Approval", "Under Review", "Submitted"]))]
     for _, r in aged.iterrows():
@@ -112,9 +103,6 @@ def portfolio_risk_score(risks: list[dict]) -> tuple[int, str]:
     return score, label
 
 
-# ---------------------------------------------------------------------------
-# Cost analytics
-# ---------------------------------------------------------------------------
 def cost_by_category(costs: pd.DataFrame, project_id: str) -> pd.DataFrame:
     df = costs[costs["project_id"] == project_id].copy()
     if df.empty:
@@ -129,11 +117,8 @@ def cost_by_category(costs: pd.DataFrame, project_id: str) -> pd.DataFrame:
     return grouped.sort_values("variance_pct", ascending=False)
 
 
-# ---------------------------------------------------------------------------
-# Quote scoring (deterministic, not just price)
-# ---------------------------------------------------------------------------
 def score_quote(row: pd.Series, min_price: float) -> float:
-    price_score = 100 - (row["price"] - min_price) / min_price * 100  # cheaper = higher
+    price_score = 100 - (row["price"] - min_price) / min_price * 100
     coverage_score = row["scope_coverage"]
     schedule_score = max(0, 100 - (row["timeline_weeks"] - 12) * 5)
     warranty_score = min(100, row["warranty_years"] * 33)
@@ -151,9 +136,6 @@ def score_quote(row: pd.Series, min_price: float) -> float:
     )
 
 
-# ---------------------------------------------------------------------------
-# Financial summary
-# ---------------------------------------------------------------------------
 def financial_summary(projects: pd.DataFrame, txns: pd.DataFrame) -> dict:
     revenue = float(projects["contract_value"].sum())
     actual = float(projects["actual_cost"].sum())
@@ -174,7 +156,6 @@ def financial_summary(projects: pd.DataFrame, txns: pd.DataFrame) -> dict:
 
 
 def monthly_revenue_cost(projects: pd.DataFrame) -> pd.DataFrame:
-    """Deterministic monthly spread of revenue and cost across the year."""
     months = pd.date_range("2026-01-01", "2026-12-01", freq="MS")
     rows = []
     total_rev = float(projects["contract_value"].sum())

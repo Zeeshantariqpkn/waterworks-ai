@@ -77,11 +77,13 @@ def inject_css() -> None:
     st.markdown(
         """
         <style>
-        /* ---------- Layout ---------- */
+        /* ===================================================================
+           GLOBAL RESET & LAYOUT
+           =================================================================== */
         html, body, [class*="css"] {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
                          Roboto, "Helvetica Neue", Arial, sans-serif;
-            color: #0F172A;
+            color: #0F172A !important;
         }
         .stApp { background: #F7F9FC; }
         .block-container {
@@ -89,41 +91,112 @@ def inject_css() -> None:
             max-width: 1500px;
         }
 
-        /* ---------- Sidebar ---------- */
+        /* ===================================================================
+           HEADINGS — FORCE VISIBILITY EVERYWHERE
+           =================================================================== */
+        h1, h2, h3, h4, h5, h6,
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
+        .stMarkdown h4, .stMarkdown h5, .stMarkdown h6,
+        [data-testid="stMarkdownContainer"] h1,
+        [data-testid="stMarkdownContainer"] h2,
+        [data-testid="stMarkdownContainer"] h3,
+        [data-testid="stMarkdownContainer"] h4,
+        [data-testid="stHeadingWithActionElements"] h1,
+        [data-testid="stHeadingWithActionElements"] h2,
+        [data-testid="stHeadingWithActionElements"] h3,
+        .main h1, .main h2, .main h3, .main h4,
+        [data-testid="stAppViewContainer"] h1,
+        [data-testid="stAppViewContainer"] h2,
+        [data-testid="stAppViewContainer"] h3,
+        [data-testid="stAppViewContainer"] h4 {
+            color: #0F172A !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.02em !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: block !important;
+        }
+
+        h1, .stMarkdown h1 { font-size: 26px !important; line-height: 1.3 !important; margin: 0.4rem 0 0.6rem 0 !important; }
+        h2, .stMarkdown h2 { font-size: 20px !important; line-height: 1.35 !important; margin: 1rem 0 0.5rem 0 !important; }
+        h3, .stMarkdown h3 { font-size: 16px !important; line-height: 1.4 !important; margin: 0.8rem 0 0.4rem 0 !important; }
+        h4, .stMarkdown h4 { font-size: 14px !important; line-height: 1.4 !important; }
+
+        /* Paragraphs & spans in the main content area */
+        .stMarkdown p, .stMarkdown span, .stMarkdown div,
+        [data-testid="stMarkdownContainer"] p,
+        [data-testid="stMarkdownContainer"] span {
+            color: #0F172A;
+        }
+
+        /* Custom inline-styled page titles */
+        [data-testid="stAppViewContainer"] div[style*="font-size:22px"],
+        [data-testid="stAppViewContainer"] div[style*="font-size:24px"],
+        [data-testid="stAppViewContainer"] div[style*="font-size:26px"] {
+            color: #0F172A !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* ===================================================================
+           SIDEBAR
+           =================================================================== */
         section[data-testid="stSidebar"] {
             background: #FFFFFF;
             border-right: 1px solid #E2E8F0;
         }
-        section[data-testid="stSidebar"] * { color: #0F172A; }
-        section[data-testid="stSidebar"] .stRadio > label {
-            font-weight: 600;
-            color: #64748B !important;
-            font-size: 11px !important;
-            letter-spacing: 0.6px;
-            text-transform: uppercase;
-            margin-bottom: 6px;
+        section[data-testid="stSidebar"] > div:first-child {
+            padding-top: 1rem;
         }
-        section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+
+        /* Only style the radio group, NOT the outer label */
+        section[data-testid="stSidebar"] div[role="radiogroup"] label {
             padding: 8px 12px;
             border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            color: #0F172A !important;
+            letter-spacing: normal !important;
+            text-transform: none !important;
             transition: background 0.15s ease;
         }
-        section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
             background: #F1F5F9;
         }
-        section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"] {
+        section[data-testid="stSidebar"] div[role="radiogroup"] label[data-checked="true"] {
             background: #EFF6FF;
         }
 
-        /* ---------- Headings ---------- */
-        h1, h2, h3, h4 { color: #0F172A; font-weight: 700; letter-spacing: -0.02em; }
-        h1 { font-size: 26px !important; }
-        h2 { font-size: 20px !important; margin-top: 1.2rem; }
-        h3 { font-size: 16px !important; }
+        /* Hide the built-in radio label entirely */
+        section[data-testid="stSidebar"] .stRadio > label {
+            display: none !important;
+        }
+        section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] {
+            gap: 2px;
+        }
 
-        /* ---------- Cards ---------- */
+        /* Sidebar section headings */
+        section[data-testid="stSidebar"] .ww-section,
+        section[data-testid="stSidebar"] .ww-kpi-label {
+            color: #64748B !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.8px !important;
+            text-transform: uppercase !important;
+            margin: 18px 0 8px 0 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* Sidebar scroll safety */
+        section[data-testid="stSidebar"] > div {
+            overflow-y: auto !important;
+        }
+
+        /* ===================================================================
+           CARDS
+           =================================================================== */
         .ww-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -163,7 +236,9 @@ def inject_css() -> None:
         .ww-kpi-trend.warn { color: #B45309; }
         .ww-kpi-sub { font-size: 11.5px; color: #64748B; margin-top: 2px; }
 
-        /* ---------- Alerts ---------- */
+        /* ===================================================================
+           ALERTS
+           =================================================================== */
         .ww-alert {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -188,7 +263,9 @@ def inject_css() -> None:
             text-transform: uppercase;
         }
 
-        /* ---------- Risk cards ---------- */
+        /* ===================================================================
+           RISK CARDS
+           =================================================================== */
         .ww-risk {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -201,7 +278,9 @@ def inject_css() -> None:
         .ww-risk.med  { border-left: 5px solid #CA8A04; }
         .ww-risk.low  { border-left: 5px solid #16A34A; }
 
-        /* ---------- AI Response ---------- */
+        /* ===================================================================
+           AI RESPONSE
+           =================================================================== */
         .ww-ai {
             background: linear-gradient(180deg,#F8FAFF 0%,#FFFFFF 60%);
             border: 1px solid #DBEAFE;
@@ -219,7 +298,9 @@ def inject_css() -> None:
         }
         .ww-ai-body { font-size: 14px; color: #1E293B; line-height: 1.6; }
 
-        /* ---------- Badges ---------- */
+        /* ===================================================================
+           PILLS / BADGES
+           =================================================================== */
         .ww-pill {
             display: inline-block;
             padding: 3px 10px;
@@ -229,7 +310,9 @@ def inject_css() -> None:
             letter-spacing: 0.3px;
         }
 
-        /* ---------- Buttons ---------- */
+        /* ===================================================================
+           BUTTONS
+           =================================================================== */
         .stButton > button {
             border-radius: 8px;
             font-weight: 600;
@@ -256,7 +339,9 @@ def inject_css() -> None:
             color: #FFFFFF;
         }
 
-        /* ---------- Tables ---------- */
+        /* ===================================================================
+           TABLES
+           =================================================================== */
         .ww-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .ww-table th {
             text-align: left;
@@ -276,7 +361,9 @@ def inject_css() -> None:
         }
         .ww-table tr:hover td { background: #F8FAFF; }
 
-        /* ---------- Section headers ---------- */
+        /* ===================================================================
+           SECTION HEADERS
+           =================================================================== */
         .ww-section {
             font-size: 12px;
             font-weight: 700;
@@ -284,9 +371,15 @@ def inject_css() -> None:
             color: #64748B;
             text-transform: uppercase;
             margin: 22px 0 10px 0;
+            display: block;
+            visibility: visible;
+            opacity: 1;
+            line-height: 1.4;
         }
 
-        /* ---------- Demo pill ---------- */
+        /* ===================================================================
+           DEMO PILL
+           =================================================================== */
         .ww-demo {
             display: inline-block;
             background: #FEF3C7;
@@ -297,6 +390,23 @@ def inject_css() -> None:
             padding: 3px 10px;
             border-radius: 999px;
             margin-left: 8px;
+        }
+
+        /* ===================================================================
+           FINAL SAFETY OVERRIDE — ensures nothing disappears
+           =================================================================== */
+        [data-testid="stAppViewContainer"] *,
+        .main * {
+            visibility: visible;
+        }
+
+        [data-testid="stAppViewContainer"] h1,
+        [data-testid="stAppViewContainer"] h2,
+        [data-testid="stAppViewContainer"] h3,
+        [data-testid="stAppViewContainer"] h4,
+        [data-testid="stAppViewContainer"] .stMarkdown strong,
+        [data-testid="stAppViewContainer"] .stMarkdown b {
+            color: #0F172A !important;
         }
         </style>
         """,

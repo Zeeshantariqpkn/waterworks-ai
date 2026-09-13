@@ -58,9 +58,8 @@ def build_report(kpis: dict,
         f"Generated {datetime.now().strftime('%B %d, %Y · %H:%M')} · Demo Workspace", small))
     story.append(Spacer(1, 14))
 
-    # ---- KPI table ----
     story.append(Paragraph("Portfolio KPIs", h2))
-    kpi_rows = [
+    story.append(_table([
         ["Metric", "Value"],
         ["Active Projects", str(kpis["active_projects"])],
         ["Backlog", _money(kpis["backlog"])],
@@ -68,12 +67,10 @@ def build_report(kpis: dict,
         ["Projected Profit", _money(kpis["projected_profit"])],
         ["At-Risk Value", _money(kpis["at_risk_value"])],
         ["Outstanding Receivables", _money(kpis["outstanding"])],
-    ]
-    story.append(_table(kpi_rows))
+    ]))
 
-    # ---- Financial summary ----
     story.append(Paragraph("Financial Summary", h2))
-    fin_rows = [
+    story.append(_table([
         ["Metric", "Value"],
         ["Contract Revenue", _money(fin["contract_revenue"])],
         ["Actual Cost to Date", _money(fin["actual_cost"])],
@@ -81,12 +78,10 @@ def build_report(kpis: dict,
         ["Projected Profit", _money(fin["projected_profit"])],
         ["Collected", _money(fin["collected"])],
         ["Outstanding", _money(fin["outstanding"])],
-    ]
-    story.append(_table(fin_rows))
+    ]))
 
     story.append(PageBreak())
 
-    # ---- Project status ----
     story.append(Paragraph("Project Status", h2))
     rows = [["Project ID", "Project", "Contract", "Forecast", "Margin", "Risk"]]
     for _, p in projects.sort_values("contract_value", ascending=False).head(12).iterrows():
@@ -97,7 +92,6 @@ def build_report(kpis: dict,
         ])
     story.append(_table(rows, col_widths=[0.8*inch, 2.3*inch, 0.9*inch, 0.9*inch, 0.7*inch, 0.7*inch]))
 
-    # ---- Risk ----
     story.append(Paragraph(f"Risk Analysis — Portfolio Score {risk_score}/100 ({risk_label})", h2))
     if risks:
         rows = [["Severity", "Project", "Category", "Detail", "Impact"]]
@@ -110,7 +104,6 @@ def build_report(kpis: dict,
     else:
         story.append(Paragraph("No material risks detected.", body))
 
-    # ---- Change orders ----
     story.append(Paragraph("Change Orders", h2))
     pending = cos[cos["status"].isin(["Pending Approval", "Under Review", "Submitted"])]
     rows = [["CO", "Project", "Description", "Requested", "Margin", "Days"]]
@@ -122,7 +115,6 @@ def build_report(kpis: dict,
         ])
     story.append(_table(rows, col_widths=[0.8*inch, 0.9*inch, 2.3*inch, 1.0*inch, 0.7*inch, 0.5*inch]))
 
-    # ---- AI recommendations ----
     story.append(Paragraph("AI Recommendations", h2))
     recs = [
         "Re-baseline WW-24018 forecast; equipment and material costs are trending above budget.",

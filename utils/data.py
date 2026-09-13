@@ -14,8 +14,6 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 # ---------------------------------------------------------------------------
 def _projects_df() -> pd.DataFrame:
     rows = [
-        # id, name, owner, location, contract, budget, actual, forecast,
-        # original_margin, expected_margin, progress, status, risk, pm, start
         ("WW-24015", "South County Water Treatment Improvements", "South County Water District", "Eugene, OR",
          4_820_000, 4_120_000, 2_540_000, 3_940_000, 14.5, 18.2, 78, "Healthy", "Low", "M. Alvarez", "2025-03-04"),
         ("WW-24018", "Eastside Wastewater Treatment Expansion", "City Water Authority", "Portland, OR",
@@ -177,16 +175,13 @@ def _costs_df() -> pd.DataFrame:
     rows = []
     rng = np.random.default_rng(42)
     for _, p in projects.iterrows():
-        # Give each project a subset of cost lines
         n = 7
         sample = rng.choice(len(_COST_CATEGORIES), size=n, replace=False)
         for idx in sample:
             cat, desc, qty, unit, unit_cost = _COST_CATEGORIES[int(idx)]
-            # scale project-appropriate
             factor = max(0.6, min(1.6, p["contract_value"] / 5_000_000))
             q = round(qty * factor, 0)
             base_total = q * unit_cost
-            # actual & forecast variations
             variance = float(rng.normal(0, 0.08))
             actual = base_total * (1 + variance)
             forecast = base_total * (1 + variance * 0.9)
@@ -202,7 +197,6 @@ def _costs_df() -> pd.DataFrame:
                 "forecast": round(forecast, 2),
             })
     df = pd.DataFrame(rows)
-    # Bias WW-24018 materials/equipment up (the demo story)
     mask = (df["project_id"] == "WW-24018") & (df["category"].isin(["Concrete", "Equipment", "Labor"]))
     df.loc[mask, "actual"] *= 1.14
     df.loc[mask, "forecast"] *= 1.13
@@ -217,7 +211,6 @@ def _costs_df() -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 def _vendors_df() -> pd.DataFrame:
     rows = [
-        # vendor_id, name, trade, contact, email, phone, rating, years, city, state
         ("V-001", "Apex Mechanical", "Mechanical", "Sarah Connor", "sconnor@apexmec.com", "503-555-0110", 4.7, 18, "Portland", "OR"),
         ("V-002", "Northwest Process", "Mechanical", "Bill Hartman", "bhartman@nwprocess.com", "503-555-0121", 4.2, 12, "Salem", "OR"),
         ("V-003", "Cascade Industrial", "Mechanical", "Elena Vasquez", "evasquez@cascade-ind.com", "503-555-0132", 4.9, 22, "Portland", "OR"),
@@ -245,9 +238,7 @@ def _vendors_df() -> pd.DataFrame:
 
 
 def _quotes_df() -> pd.DataFrame:
-    """Quotes for the Eastside Wastewater Treatment Expansion (mechanical scope)."""
     rows = [
-        # quote_id, project_id, vendor_id, scope, price, coverage, weeks, warranty_years, terms, experience, ai_score
         ("Q-5001", "WW-24018", "V-001", "Mechanical", 1_240_000, 96, 18, 2, "Net 30", "Excellent", 91),
         ("Q-5002", "WW-24018", "V-002", "Mechanical", 1_180_000, 87, 22, 1, "40% advance", "Good", 78),
         ("Q-5003", "WW-24018", "V-003", "Mechanical", 1_295_000, 100, 16, 3, "Net 30", "Excellent", 95),
@@ -314,7 +305,6 @@ def _transactions_df() -> pd.DataFrame:
                 "date": f"2026-{month:02d}-{day:02d}",
             })
     df = pd.DataFrame(rows)
-    # Force an overdue 420K on WW-24011
     idx = (df["project_id"] == "WW-24011") & (df["status"] == "Pending")
     if idx.any():
         first = df[idx].index[0]
@@ -364,7 +354,7 @@ def load_transactions() -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# CSV persistence (write-once, for the shipped data/ folder)
+# CSV persistence helper (optional)
 # ---------------------------------------------------------------------------
 def _write_csvs() -> None:
     os.makedirs(DATA_DIR, exist_ok=True)

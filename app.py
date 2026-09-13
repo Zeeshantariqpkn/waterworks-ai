@@ -3,7 +3,6 @@
 Run with: streamlit run app.py
 """
 from __future__ import annotations
-import io
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -14,9 +13,7 @@ from utils import data as D
 from utils import analytics as A
 from utils import ai as AI
 from utils import pdf as PDF
-from utils.helpers import (
-    inject_css, money, pct, risk_badge, status_badge
-)
+from utils.helpers import inject_css, money, pct, risk_badge, status_badge
 
 # ===========================================================================
 # PAGE CONFIG
@@ -120,7 +117,7 @@ with st.sidebar:
     st.session_state["page"] = choice
 
     st.markdown(
-        """
+        f"""
         <div style="position:relative;margin-top:24px;padding:12px 14px;
                     background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;">
           <div style="font-size:11px;font-weight:700;color:#0F172A;letter-spacing:0.4px;">
@@ -130,7 +127,7 @@ with st.sidebar:
             Last synced: Just now
           </div>
           <div style="font-size:11px;color:#64748B;margin-top:2px;">
-            AI provider: <b>""" + AI.provider().upper() + """</b>
+            AI provider: <b>{AI.provider().upper()}</b>
           </div>
         </div>
         """,
@@ -139,7 +136,7 @@ with st.sidebar:
 
 
 # ===========================================================================
-# TOP BAR (search + demo pill)
+# TOP BAR
 # ===========================================================================
 top_l, top_m, top_r = st.columns([3, 1.4, 2.4])
 with top_l:
@@ -160,7 +157,7 @@ with top_r:
 
 
 # ===========================================================================
-# GLOBAL SEARCH RESULTS
+# GLOBAL SEARCH
 # ===========================================================================
 def render_search_results(q: str):
     if not q or len(q) < 2:
@@ -210,7 +207,7 @@ render_search_results(st.session_state["search_query"])
 
 
 # ===========================================================================
-# REUSABLE UI COMPONENTS
+# UI HELPERS
 # ===========================================================================
 def kpi_card(label: str, value: str, trend: str = "", sub: str = "", trend_class: str = ""):
     trend_html = ""
@@ -294,7 +291,6 @@ def page_dashboard():
     with c6: kpi_card("OUTSTANDING PAYMENTS", money(kpis["outstanding"]),
                       "↑ $120K vs last week", "Receivables aging", trend_class="warn")
 
-    # ---- charts row 1 ----
     section("PROJECT PROFITABILITY")
     prof = A.profitability_frame(projects).sort_values("contract_value", ascending=False).head(8)
     fig = go.Figure()
@@ -343,7 +339,6 @@ def page_dashboard():
         plotly_defaults(fig3, height=320)
         st.plotly_chart(fig3, use_container_width=True, config={"displayModeBar": False})
 
-    # ---- bid pipeline ----
     section("BID PIPELINE")
     stages = ["Research", "Estimating", "Internal Review", "Submitted", "Negotiation", "Awarded", "Lost"]
     counts = bids["status"].value_counts().reindex(stages).fillna(0).astype(int)
@@ -359,7 +354,6 @@ def page_dashboard():
     plotly_defaults(fig4, height=300)
     st.plotly_chart(fig4, use_container_width=True, config={"displayModeBar": False})
 
-    # ---- alerts ----
     section("MANAGEMENT ALERTS")
     alerts = [
         ("warn", "WW-24018 is trending 7.3% below expected margin."),
@@ -379,7 +373,7 @@ def page_dashboard():
             st.download_button(
                 "⬇  Download PDF",
                 data=pdf_bytes,
-                file_name=f"WaterWorks-AI-Executive-Report.pdf",
+                file_name="WaterWorks-AI-Executive-Report.pdf",
                 mime="application/pdf",
                 use_container_width=True,
             )
@@ -607,7 +601,6 @@ def page_estimating():
     with s4: kpi_card("EXPECTED PROFIT", money(profit), f"{margin:.1f}% margin")
     with s5: kpi_card("PROPOSED CONTRACT", money(contract), "Gross Margin", f"{margin:.1f}%")
 
-    # Margin gauge
     section("MARGIN GAUGE")
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
@@ -631,7 +624,6 @@ def page_estimating():
     plotly_defaults(fig, height=300)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # AI estimate analysis
     section("AI ESTIMATE ANALYSIS")
     if st.button("✦ Analyze Estimate with AI", type="primary"):
         with st.spinner("Analyzing estimate across 2,140 comparable projects…"):
@@ -787,7 +779,6 @@ def page_projects():
                     "Profit", "Margin", "Progress", "Risk"]
     st.dataframe(show, use_container_width=True, hide_index=True, height=380)
 
-    # Detail
     p = projects[projects["project_id"] == pid].iloc[0]
     section(f"PROJECT DETAIL · {p['project_id']}")
     d1, d2, d3, d4, d5 = st.columns(5)
@@ -908,7 +899,7 @@ def page_projects():
 
     with tabs[5]:
         st.markdown(
-            f"""
+            """
             - **Aug 24, 2026 · 09:12** — Cost report received from field
             - **Aug 22, 2026 · 16:40** — Change order CO-1048 submitted for review
             - **Aug 19, 2026 · 11:05** — Vendor quote Q-5003 received (Cascade Industrial)
@@ -939,10 +930,8 @@ def page_change_orders():
     with c1: kpi_card("PENDING CHANGE ORDERS", str(len(pending)))
     with c2: kpi_card("PENDING VALUE", money(pending["requested_amount"].sum()))
     with c3: kpi_card("APPROVED THIS MONTH", money(approved_month))
-    with c4: kpi_card("AVG DAYS PENDING",
-                      f"{pending['days_pending'].mean():.0f} days")
+    with c4: kpi_card("AVG DAYS PENDING", f"{pending['days_pending'].mean():.0f} days")
 
-    stages = ["Draft", "Submitted", "Under Review", "Approved", "Rejected"]
     section("PIPELINE")
     counts = {
         "Draft": 0,
@@ -977,7 +966,6 @@ def page_change_orders():
                     "Profit", "Margin", "Status", "Days", "Owner"]
     st.dataframe(show, use_container_width=True, hide_index=True, height=420)
 
-    # CO detail
     section("CHANGE ORDER DETAIL · CO-1048")
     co = cos[cos["co_id"] == "CO-1048"].iloc[0]
     d1, d2, d3, d4 = st.columns(4)
@@ -1217,7 +1205,7 @@ def page_risk():
 
 
 # ===========================================================================
-# PAGE: AI ASSISTANT (Decision Center)
+# PAGE: AI ASSISTANT
 # ===========================================================================
 def page_ai():
     st.markdown(
@@ -1328,11 +1316,11 @@ def page_settings():
 
     with tabs[0]:
         st.markdown(
-            """
+            f"""
             **Workspace** · Demo Workspace  
             **Industry** · Water & Wastewater Infrastructure  
             **Region** · Pacific Northwest, USA  
-            **AI Provider** · """ + AI.provider().upper() + """  
+            **AI Provider** · {AI.provider().upper()}  
             """
         )
         st.info("This is a demo workspace. No data leaves your browser session.")

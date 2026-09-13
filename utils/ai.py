@@ -1,22 +1,12 @@
-"""AI decision layer.
-
-- If GROQ_API_KEY is present (env var or st.secrets), uses Groq.
-- Otherwise, falls back to deterministic demo intelligence so the demo
-  always produces a compelling, structured, construction-aware answer.
-- Never crashes if the API is unavailable.
-"""
+"""AI decision layer with deterministic demo fallback."""
 from __future__ import annotations
 import os
-import textwrap
 import streamlit as st
 import pandas as pd
 
 from . import analytics
 
 
-# ---------------------------------------------------------------------------
-# Provider detection
-# ---------------------------------------------------------------------------
 def _get_api_key() -> str | None:
     key = os.environ.get("GROQ_API_KEY")
     if key:
@@ -42,8 +32,7 @@ def _try_groq(prompt: str, system: str | None = None) -> str | None:
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system or
-                 "You are a construction-industry financial analyst. Be concise, "
-                 "specific, and reference project IDs and dollar figures."},
+                 "You are a construction-industry financial analyst."},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.2,
@@ -54,18 +43,12 @@ def _try_groq(prompt: str, system: str | None = None) -> str | None:
         return None
 
 
-# ---------------------------------------------------------------------------
-# Agents (modular so they can later be re-wired to LangGraph)
-# ---------------------------------------------------------------------------
 def run_bid_agent(bids: pd.DataFrame) -> str:
     top = bids.sort_values("probability", ascending=False).head(3)
     lines = ["**Highest-probability opportunities today:**", ""]
     for _, b in top.iterrows():
         lines.append(f"- **{b['opportunity_id']}** · {b['project']} — "
                      f"{b['probability']}% · ${b['estimated_value']/1e6:.2f}M · {b['status']}")
-    lines.append("")
-    lines.append("Recommendation: prioritize BID-3004 (Municipal Lift Station Upgrade) — "
-                 "in negotiation with 81% probability and a fast close window.")
     return "\n".join(lines)
 
 
@@ -122,8 +105,7 @@ def run_quote_agent(quotes: pd.DataFrame, vendors: pd.DataFrame) -> dict:
     }
 
 
-def run_project_agent(project_row: pd.Series,
-                      cost_cat: pd.DataFrame) -> str:
+def run_project_agent(project_row: pd.Series, cost_cat: pd.DataFrame) -> str:
     worst = cost_cat.sort_values("variance_pct", ascending=False).head(3)
     lines = [
         f"**{project_row['project_id']} · {project_row['project_name']}** — margin is "
@@ -154,9 +136,6 @@ def run_risk_agent(risks: list[dict]) -> str:
             f"- **{r['project_id']}** · {r['category']} — {r['detail']} "
             f"(impact {r['impact']:+,.0f})"
         )
-    lines.append("")
-    lines.append("Fix the highest-severity items first; they represent the greatest "
-                 "margin recovery opportunity.")
     return "\n".join(lines)
 
 
@@ -166,15 +145,10 @@ def run_financial_agent(fin: dict) -> str:
         f"**Portfolio financial position** — contract revenue ${fin['contract_revenue']/1e6:.1f}M, "
         f"forecast cost ${fin['forecast_cost']/1e6:.1f}M, projected profit "
         f"${fin['projected_profit']/1e6:.1f}M ({margin:.1f}%). "
-        f"Outstanding receivables ${fin['outstanding']/1e6:.1f}M. "
-        "Cash flow remains positive, but accelerating collections on the two largest "
-        "overdue invoices would materially improve working capital."
+        f"Outstanding receivables ${fin['outstanding']/1e6:.1f}M."
     )
 
 
-# ---------------------------------------------------------------------------
-# Decision Center — structured Q&A
-# ---------------------------------------------------------------------------
 SUGGESTED_QUESTIONS = [
     "Which projects are losing margin?",
     "Which project has the highest cost risk?",
@@ -195,40 +169,27 @@ def answer_question(question: str,
                     costs: pd.DataFrame,
                     quotes: pd.DataFrame,
                     vendors: pd.DataFrame) -> dict:
-    """Return a structured answer: summary, cards, explanation,
-    evidence, recommendation, impact."""
     q = question.lower()
 
-    # --- Which projects are losing margin? ---
-    if "losing margin" in q or "at risk" in q and "profit" in q:
+    if "losing margin" in q or ("at risk" in q and "profit" in q):
         losing = projects[projects["margin_erosion"] > 0].sort_values(
             "margin_erosion", ascending=False).head(3)
-        cards = []
-        for _, p in losing.iterrows():
-            cards.append({
-                "id": p["project_id"],
-                "title": p["project_name"],
-                "margin": f"{p['expected_margin']:.1f}%",
-                "risk": p["risk_level"],
-            })
+        cards = [{"id": p["project_id"], "title": p["project_name"],
+                  "margin": f"{p['expected_margin']:.1f}%",
+                  "risk": p["risk_level"]} for _, p in losing.iterrows()]
         worst = losing.iloc[0]
         return {
             "summary": f"{len(losing)} projects are eroding margin.",
             "cards": cards,
-            "explanation": (
-                f"The largest portfolio risk is {worst['project_id']} because equipment "
-                f"and material costs are trending above budget."
-            ),
-            "evidence": (
-                f"{worst['project_id']} original margin {worst['original_margin']:.1f}% → "
-                f"current {worst['expected_margin']:.1f}% "
-                f"(-{worst['margin_erosion']:.1f} pts)."
-            ),
+            "explanation": (f"The largest portfolio risk is {worst['project_id']} because "
+                            f"equipment and material costs are trending above budget."),
+            "evidence": (f"{worst['project_id']} original margin {worst['original_margin']:.1f}% → "
+                         f"current {worst['expected_margin']:.1f}% "
+                         f"(-{worst['margin_erosion']:.1f} pts)."),
             "recommendation": "Open the Risk Center and re-baseline these forecasts.",
             "impact": -(worst["margin_erosion"] / 100) * worst["contract_value"],
         }
 
-    # --- Highest cost risk ---
     if "highest cost risk" in q or "cost risk" in q:
         worst_p = projects.sort_values("margin_erosion", ascending=False).iloc[0]
         cat = analytics.cost_by_category(costs, worst_p["project_id"])
@@ -236,9 +197,8 @@ def answer_question(question: str,
         cards = [{"id": worst_p["project_id"], "title": worst_p["project_name"],
                   "margin": f"{worst_p['expected_margin']:.1f}%",
                   "risk": worst_p["risk_level"]}]
-        evidence = "; ".join(
-            f"{r['category']} {r['variance_pct']:+.1f}%" for _, r in top.iterrows()
-        )
+        evidence = "; ".join(f"{r['category']} {r['variance_pct']:+.1f}%"
+                             for _, r in top.iterrows())
         return {
             "summary": f"{worst_p['project_id']} carries the highest cost risk.",
             "cards": cards,
@@ -248,7 +208,6 @@ def answer_question(question: str,
             "impact": -(worst_p["margin_erosion"] / 100) * worst_p["contract_value"],
         }
 
-    # --- Vendor selection ---
     if "vendor" in q or "subcontractor" in q:
         rec = run_quote_agent(quotes, vendors)
         b = rec["best"]
@@ -264,7 +223,6 @@ def answer_question(question: str,
             "impact": rec["price_delta"],
         }
 
-    # --- Change orders ---
     if "change order" in q or ("co" in q and "attention" in q):
         pending = cos[cos["status"].isin(["Pending Approval", "Under Review", "Submitted"])]
         aged = pending.sort_values("days_pending", ascending=False).head(3)
@@ -282,7 +240,6 @@ def answer_question(question: str,
             "impact": total,
         }
 
-    # --- Overdue invoices ---
     if "invoice" in q or "overdue" in q or "payment" in q:
         od = txns[(txns["type"] == "Receivable") & (txns["status"] == "Overdue")]
         cards = [{"id": r["project_id"], "title": r["reference"],
@@ -298,7 +255,6 @@ def answer_question(question: str,
             "impact": -float(total),
         }
 
-    # --- What should management focus on today? ---
     if "focus" in q or "management" in q or "today" in q:
         return {
             "summary": "Four items require management attention today.",
@@ -315,7 +271,6 @@ def answer_question(question: str,
             "impact": -338_000,
         }
 
-    # --- Which bids to prioritize ---
     if "bid" in q or "pipeline" in q:
         top = bids.sort_values(["probability", "estimated_value"], ascending=False).head(3)
         cards = [{"id": b["opportunity_id"], "title": b["project"],
@@ -330,7 +285,6 @@ def answer_question(question: str,
             "impact": float((top["estimated_value"] * top["probability"] / 100).sum()),
         }
 
-    # --- Material costs ---
     if "material" in q or "cost increasing" in q:
         cat = costs.groupby("category", as_index=False).agg(
             budget=("budget", "sum"), actual=("actual", "sum"))
@@ -349,7 +303,6 @@ def answer_question(question: str,
             "impact": -float((cat["actual"] - cat["budget"]).sum()),
         }
 
-    # --- Fallback (also used when Groq is available but we want structure) ---
     groq = _try_groq(question)
     if groq:
         return {
