@@ -138,21 +138,27 @@ with st.sidebar:
 # ===========================================================================
 # TOP BAR
 # ===========================================================================
-top_l, top_m, top_r = st.columns([3, 1.4, 2.4])
-with top_l:
-    st.markdown(
-        '<div style="display:flex;align-items:center;gap:10px;padding-top:4px;">'
-        '<span style="font-size:20px;font-weight:700;color:#0F172A;">WaterWorks AI</span>'
+    top_l, top_r = st.columns([2, 3])
+    with top_l:
+        st.markdown(
+        '<div style="display:flex;align-items:center;gap:10px;padding-top:6px;">'
+        '<span style="font-size:18px;font-weight:700;color:#0F172A;letter-spacing:-0.01em;">'
+        'WaterWorks AI</span>'
         '<span class="ww-demo">DEMO MODE</span>'
         '</div>',
         unsafe_allow_html=True,
     )
-with top_r:
-    st.session_state["search_query"] = st.text_input(
+    with top_r:
+        st.session_state["search_query"] = st.text_input(
         "Search projects, bids, vendors, change orders",
         value=st.session_state["search_query"],
         placeholder="🔎  Search projects, bids, vendors, change orders…",
         label_visibility="collapsed",
+    )
+
+    st.markdown(
+    '<div style="border-bottom:1px solid #E2E8F0;margin:6px 0 14px 0;"></div>',
+    unsafe_allow_html=True,
     )
 
 
@@ -397,19 +403,26 @@ def page_bids():
         unsafe_allow_html=True,
     )
 
-    f1, f2, f3 = st.columns([1.2, 1, 1])
-    with f1:
-        status_filter = st.multiselect(
-            "Status", options=sorted(bids["status"].unique()),
-            default=sorted(bids["status"].unique()))
-    with f2:
-        type_filter = st.multiselect(
-            "Project Type", options=sorted(bids["project_type"].unique()),
-            default=sorted(bids["project_type"].unique()))
-    with f3:
-        est_filter = st.multiselect(
-            "Estimator", options=sorted(bids["estimator"].unique()),
-            default=sorted(bids["estimator"].unique()))
+    with st.container():
+        f1, f2, f3 = st.columns([1.4, 1.1, 1.1])
+        with f1:
+            status_filter = st.multiselect(
+                "**Status**",
+                options=sorted(bids["status"].unique()),
+                default=["Estimating", "Internal Review", "Submitted", "Negotiation"],
+            )
+        with f2:
+            type_filter = st.multiselect(
+                "**Project Type**",
+                options=sorted(bids["project_type"].unique()),
+                default=sorted(bids["project_type"].unique()),
+            )
+        with f3:
+            est_filter = st.multiselect(
+                "**Estimator**",
+                options=sorted(bids["estimator"].unique()),
+                default=sorted(bids["estimator"].unique()),
+            )
 
     view = st.radio("View", ["Table", "Kanban"], horizontal=True, label_visibility="collapsed")
 

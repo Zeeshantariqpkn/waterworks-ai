@@ -87,8 +87,41 @@ def inject_css() -> None:
         }
         .stApp { background: #F7F9FC; }
         .block-container {
-            padding: 1.4rem 2.2rem 3rem 2.2rem;
+            padding: 1rem 2.2rem 3rem 2.2rem;
             max-width: 1500px;
+        }
+
+        /* Push content down so it clears the top bar area */
+        [data-testid="stAppViewContainer"] > .main {
+            padding-top: 1rem;
+        }
+
+        /* Tighten Streamlit's default top gap */
+        [data-testid="stAppViewContainer"] .block-container > div:first-child {
+            padding-top: 0 !important;
+        }
+
+        /* Reduce vertical gap between stacked widgets */
+        [data-testid="stVerticalBlock"] > [style*="flex-direction: column"] > [data-testid="stVerticalBlock"] {
+            gap: 0.6rem;
+        }
+
+        /* Multiselect pills — make them compact */
+        span[data-baseweb="tag"] {
+            background-color: #1D4ED8 !important;
+            color: #FFFFFF !important;
+            border-radius: 6px !important;
+            font-size: 12px !important;
+            height: 24px !important;
+        }
+        span[data-baseweb="tag"] span {
+            color: #FFFFFF !important;
+        }
+
+        /* Make the header area of the app not overlap */
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+            height: 2rem !important;
         }
 
         /* ===================================================================
@@ -407,6 +440,10 @@ def inject_css() -> None:
         [data-testid="stAppViewContainer"] .stMarkdown strong,
         [data-testid="stAppViewContainer"] .stMarkdown b {
             color: #0F172A !important;
+        }
+        /* Extra safety: keep the main title clear of the Streamlit toolbar */
+        .main .block-container {
+            padding-top: 2.5rem !important;
         }
         </style>
         """,
